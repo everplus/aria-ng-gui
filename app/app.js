@@ -15,8 +15,11 @@ const { app, BrowserWindow, Menu, ipcMain } = require("electron")
 
 const edit_conf = require("./edit_conf.js")
 const { buildMenu } = require("./menu.js")
+const { displayTray } = require("./tray.js")
 
 let mainWindow = null
+
+const icon = path.join(__dirname, "assets", "AriaNg.png")
 
 app.commandLine.appendSwitch("ignore-certificate-errors") // 忽略证书相关错误, 适用于使用自签名证书将Aria2的RPC配置成HTTPS协议的情况
 
@@ -31,7 +34,7 @@ app.on("ready", function () {
         height: 600,
         minWidth: 400,
         minHeight: 400,
-        icon: path.join(__dirname, "assets", "AriaNg.png"),
+        icon,
         show: false,
         webPreferences: {
             nodeIntegration: false,
@@ -49,31 +52,32 @@ app.on("ready", function () {
 
     //打开主程序
     fs.chmodSync(aria2_dir, 0o777)
-	
-	let subpy = null;
 
-	function runAria2 () {
-		killAria2();
-		subpy = require("child_process").spawn(aria2_dir, [`--conf-path=${conf_path}`], {
-			stdio: 'pipe'
-		})
+    let subpy = null
+
+    function runAria2() {
+        killAria2()
+
+        subpy = require("child_process").spawn(aria2_dir, [`--conf-path=${conf_path}`], {
+            stdio: "pipe"
+        })
         subpy.stdout.pipe(process.stdout, { end: false })
         subpy.stderr.pipe(process.stderr, { end: false })
 
-		subpy.on('error', runAria2);
-		subpy.on('exit', runAria2);
-	}
+        subpy.on("error", runAria2)
+        subpy.on("exit", runAria2)
+    }
 
-	function killAria2 () {
-		if (subpy) {
-			subpy.removeAllListeners('error');
-			subpy.removeAllListeners('exit');
-			subpy.kill("SIGINT")
-			subpy = null
-		}
-	}
+    function killAria2() {
+        if (subpy) {
+            subpy.removeAllListeners("error")
+            subpy.removeAllListeners("exit")
+            subpy.kill("SIGINT")
+            subpy = null
+        }
+    }
 
-	runAria2()
+    runAria2()
 
     // 打开窗口的调试工具
     //mainWindow.webContents.openDevTools()
@@ -93,8 +97,14 @@ app.on("ready", function () {
         mainWindow.show()
     })
 
+    mainWindow.on("close", function (e) {
+        e.preventDefault()
+        mainWindow.hide()
+        displayTray(icon)
+    })
+
     mainWindow.on("closed", function () {
-		killAria2()
+        killAria2()
         mainWindow = null
     })
 

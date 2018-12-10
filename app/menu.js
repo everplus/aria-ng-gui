@@ -11,6 +11,7 @@
 const process = require("process")
 const { Menu } = require("electron")
 const Translate = require("./translate.js")
+const { destroyTray, destroyMainWindow } = require("./tray.js")
 
 const isDev = process.argv.pop() == "dev"
 
@@ -25,7 +26,7 @@ const contextMenuTemplate = [
     { label: "粘贴", role: "paste", accelerator: "CmdOrCtrl+V" }, //Paste菜单项
     { type: "separator" }, //分隔线 
     { label: "全选", role: "selectall", accelerator: "CmdOrCtrl+A" }, //Select All菜单项
-];
+]
 if (isDev) {
     [
         { type: "separator" }, //分隔线 
@@ -44,9 +45,26 @@ const appMenuTemplate = [
     }
 ]
 
+const trayMenuTemplate = [
+    // {
+    //     label: "打开下载文件夹",
+    // },
+    {
+        label: "显示窗口",
+        click() {
+            destroyTray()
+        }
+    },
+    {
+        label: "退出",
+        click() {
+            destroyMainWindow()
+        }
+    }
+]
 
 const buildMenu = (locale) => {
-    
+
     const _buildMenuFromTemplate = (menuTemplate) => {
         if (locale != "zh-CN") {
             menuTemplate = Translate(menuTemplate, locale)
@@ -56,10 +74,12 @@ const buildMenu = (locale) => {
 
     const contextMenu = _buildMenuFromTemplate(contextMenuTemplate)
     const appMenu = _buildMenuFromTemplate(appMenuTemplate)
+    const trayMenu = _buildMenuFromTemplate(trayMenuTemplate)
 
     return {
         contextMenu,
-        appMenu
+        appMenu,
+        trayMenu
     }
 }
 
